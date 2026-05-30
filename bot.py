@@ -1,5 +1,6 @@
 import os
 import fal_client
+import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -10,10 +11,11 @@ async def generar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = update.message.text
     await update.message.reply_text("⏳ Generando tu imagen, espera unos segundos...")
     try:
-        result = fal_client.subscribe(
+        handler = await fal_client.submit_async(
             "fal-ai/flux/schnell",
             arguments={"prompt": texto, "num_images": 1}
         )
+        result = await handler.get()
         imagen_url = result["images"][0]["url"]
         await update.message.reply_photo(photo=imagen_url, caption=f'✅ "{texto}"')
     except Exception as e:
