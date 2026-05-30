@@ -1,8 +1,10 @@
 import os
-import fal_client
+import httpx
 import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+
+FAL_KEY = os.environ["FAL_KEY"]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🎨 Hola! Escríbeme lo que quieres que dibuje y lo genero al instante.")
@@ -11,13 +13,15 @@ async def generar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = update.message.text
     await update.message.reply_text("⏳ Generando tu imagen, espera unos segundos...")
     try:
-        handler = await fal_client.submit_async(
-            "fal-ai/flux/schnell",
-            arguments={"prompt": texto, "num_images": 1}
-        )
-        result = await handler.get()
-        imagen_url = result["images"][0]["url"]
-        await update.message.reply_photo(photo=imagen_url, caption=f'✅ "{texto}"')
+        async with httpx.AsyncClient(timeout=60) as client:
+            r = await client.post(
+                "https://fal.run/fal-ai/flux/schnell",
+                headers={"Authorization": f"Key {FAL_KEY}"},
+                json={"prompt": texto, "num_images": 1}
+            )
+            data = r.json()
+            imagen_url = data["images"][0]["url"]
+            await update.message.reply_photo(photo=imagen_url, caption=f'✅ "{texto}"')
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {str(e)}")
 
