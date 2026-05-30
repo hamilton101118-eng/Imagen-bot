@@ -1,17 +1,16 @@
 import os
 import httpx
-import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 FAL_KEY = os.environ["FAL_KEY"]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🎨 Hola! Escríbeme lo que quieres que dibuje y lo genero al instante.")
+    await update.message.reply_text("🎨 Hola! Escríbeme lo que quieres que dibuje.")
 
 async def generar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = update.message.text
-    await update.message.reply_text("⏳ Generando tu imagen, espera unos segundos...")
+    await update.message.reply_text("⏳ Generando tu imagen...")
     try:
         async with httpx.AsyncClient(timeout=60) as client:
             r = await client.post(
@@ -20,8 +19,7 @@ async def generar(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 json={"prompt": texto, "num_images": 1}
             )
             data = r.json()
-            imagen_url = data["images"][0]["url"]
-            await update.message.reply_photo(photo=imagen_url, caption=f'✅ "{texto}"')
+            await update.message.reply_text(f"Respuesta: {str(data)[:500]}")
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {str(e)}")
 
